@@ -1,0 +1,7 @@
+README.md
+setup.py
+kukakr5Arc.egg-info/PKG-INFO
+kukakr5Arc.egg-info/SOURCES.txt
+kukakr5Arc.egg-info/dependency_links.txt
+kukakr5Arc.egg-info/requires.txt
+kukakr5Arc.egg-info/top_level.txt
