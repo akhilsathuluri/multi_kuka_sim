@@ -24,8 +24,9 @@ class kukakr5ArcEnv(gym.Env):
 		self.distance_threshold = 0.2
 		self._observation = []
 		self._env_step_counter = 0
-		self._is_render = True
+		self._is_render = False
 		self._action_bound = 0.3
+		self.reward_type = "Dense"
 		# self.maxVelocity = .35
 		# self.maxForce = 200
 		self.useInverseKinematics = 1
@@ -34,7 +35,7 @@ class kukakr5ArcEnv(gym.Env):
 		self.goalPos = [0.0,0.0,0.0]
 		self.orn = [0.0,0.0,0.0,1.0]
 		self.sub_steps = 80
-		self.max_sim_steps = 100
+		self._max_episode_steps = 100
 		self.time_to_sleep = 1./100.
 		self.homePos = [0,-0.5*math.pi,0.5*math.pi,0,0.5*math.pi,0]
 		# self._pybullet_client = bc.BulletClient(connection_mode=p.GUI)
@@ -64,12 +65,17 @@ class kukakr5ArcEnv(gym.Env):
 		self.seed()
 		self.reset()
 
-		observation_high = self.GetObservationUpperBound()
-		observation_low = self.GetObservationLowerBound()
+		obs = self._get_obs()
 		action_dim = 3
 		action_high = np.array([self._action_bound]*action_dim)
 		self.action_space = spaces.Box(-action_high, action_high, dtype=np.float32)
-		self.observation_space = spaces.Box(observation_low, observation_high, dtype=np.float32)
+		# self.observation_space = spaces.Box(observation_low, observation_high, dtype=np.float32)
+		self.observation_space = spaces.Dict(dict(
+            desired_goal=spaces.Box(-np.inf, np.inf, shape=obs['achieved_goal'].shape, dtype='float32'),
+            achieved_goal=spaces.Box(-np.inf, np.inf, shape=obs['achieved_goal'].shape, dtype='float32'),
+            observation=spaces.Box(-np.inf, np.inf, shape=obs['observation'].shape, dtype='float32'),
+        ))
+
 
 	def reset(self):
 		#Resets without completely destroying the simulation
@@ -84,8 +90,10 @@ class kukakr5ArcEnv(gym.Env):
 				break
 		#Reset the marker position
 		p.resetBasePositionAndOrientation(self.markerId, self.goalPos, self.orn)
+		# return self._get_observation()
+		obs = self._get_obs()
+		return obs
 
-		return self._get_observation()
 
 	def seed(self, seed=None):
 		self.np_random, seed = seeding.np_random(seed)
@@ -94,9 +102,9 @@ class kukakr5ArcEnv(gym.Env):
 	"""Stepping the simulation forward using the given action. There is a more complicated sleep scheme in minitaur_gym_env.py"""
 	def step(self, action):
 		#Clean this my putting the robot specific functions in a different function
-		self._observation = self._get_observation()
-		for ii in range(len(action)):
-			self._observation[ii] += action[ii]
+		self._get_obs()
+		# for ii in range(np.size(action)):
+		self._observation[:3] += action
 		#Clipping action to not touch the ground
 		if self._observation[2] < 0.2:
 			self._observation[2] = 0.2
@@ -109,37 +117,47 @@ class kukakr5ArcEnv(gym.Env):
 		else:
 			for _ in range(self.sub_steps):
 				self._pybullet_client.stepSimulation()
+		obs = self._get_obs()
+		done = False
+		info = {
+		'is_success': self._is_success(obs['achieved_goal'], self.goalPos),
+		}
+		reward = self.compute_reward(obs['achieved_goal'], self.goalPos, info)
+		# info = {
+		# 	'is_success': self._is_success(obs['achieved_goal'], self.goalPos),
+		# }
+		# reward = self.compute_reward(obs['achieved_goal'], self.goalPos, info)
+		return obs, reward, done, info
 
-		self._env_step_counter += 1
-		reward = self._reward()
-		#Add a safety condition that the end_effector should never run against the ground
-		#Termination condition based on the number of environment steps
-		if self._env_step_counter > self.max_sim_steps:
-			done = True
-		else:
-			done = False
-		return self._observation, reward, done, {}
+		# self._env_step_counter += 1
+		# reward = self._reward()
+		# #Add a safety condition that the end_effector should never run against the ground
+		# #Termination condition based on the number of environment steps
+		# if self._env_step_counter > self._max_episode_steps:
+		# 	done = True
+		# else:
+		# 	done = False
+		# #Passing the return for HER needs to be appended with the desired_goal
+		# return self._observation, reward, done, {}
 
-	def dist(self, pos1, pos2):
+	def goal_distance(self, pos1, pos2):
 		return np.sqrt(np.sum(np.square(np.array(pos1) - np.array(pos2))))
 
-	def _reward(self):
+	def compute_reward(self, achieved_goal, desired_goal, info):
 		#Reward assuming the reacher task
-		#Get distance from the targetPosition
-		# flangePosition = self._pybullet_client.getLinkState(self.robotId, self.flangeIndex)[:2][0]
-		dist = self.dist(self._observation[:3], self.goalPos)
-		if dist < self.distance_threshold:
-			reward = 1
+		dist = self.goal_distance(achieved_goal, desired_goal)
+		#Trying with a much denser reward
+		if self.reward_type == "sparse":
+			return -(dist>self.distance_threshold).astype(np.float32)
 		else:
-			reward = -1
-		print(dist, reward)
-		return reward
+			return -dist
 
-	def _get_observation(self):
+	def _get_obs(self):
 		#Considering the position and orientation of the flange for now
 		observation = []
 		state = p.getLinkState(self.robotId, self.flangeIndex)[:2]
 		pos = state[0]
+		achieved_goal = pos
 		ori = state[1]
 		rel_dist = pos - self.goalPos
 		euler = p.getEulerFromQuaternion(ori)
@@ -148,18 +166,27 @@ class kukakr5ArcEnv(gym.Env):
 		#Added relative distance vector as an observation
 		observation.extend(list(rel_dist))
 		self._observation = np.array(observation)
-		return self._observation
+		# return self._observation
+		return {
+		'observation': self._observation,
+		'achieved_goal': np.array(achieved_goal),
+		'desired_goal': self.goalPos,
+		}
 
-	def GetObservationUpperBound(self):
-		upper_bound = np.array([0.0]*self.GetObservationDimension())
-		#Assuming the observation involves only the position and orientation of the end_effector
-		upper_bound[0:3] = 5
-		#Assuming euler rotations
-		upper_bound[3:] = math.pi
-		return upper_bound
+	def _is_success(self, achieved_goal, desired_goal):
+		dist = self.goal_distance(achieved_goal, desired_goal)
+		return (dist<self.distance_threshold).astype(np.float32)
 
-	def GetObservationDimension(self):
-		return np.size(self._get_observation())
+	# def GetObservationUpperBound(self):
+	# 	upper_bound = np.array([0.0]*self.GetObservationDimension())
+	# 	#Assuming the observation involves only the position and orientation of the end_effector
+	# 	upper_bound[0:3] = 5
+	# 	#Assuming euler rotations
+	# 	upper_bound[3:] = math.pi
+	# 	return upper_bound
 
-	def GetObservationLowerBound(self):
-		return -self.GetObservationUpperBound()
+	# def GetObservationDimension(self):
+	# 	return np.size(self._get_obs())
+
+	# def GetObservationLowerBound(self):
+	# 	return -self.GetObservationUpperBound()
