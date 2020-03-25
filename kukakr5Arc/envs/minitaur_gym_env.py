@@ -388,4 +388,3 @@ class MinitaurBulletEnv(gym.Env):
     _reset = reset
     _seed = seed
     _step = step
-
