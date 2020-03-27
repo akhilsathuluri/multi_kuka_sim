@@ -11,6 +11,16 @@ register(
     nondeterministic = True,
 )
 
+#Updated version of the env
+
+register(
+    id='kukakr5Arc-v1',
+    entry_point='kukakr5Arc.envs:kukakr5ArcEnv_v1',
+#    timestep_limit=1000.0,
+    reward_threshold=1.0,
+    nondeterministic = True,
+)
+
 #Use the others to make the pusher env
 
 #register(

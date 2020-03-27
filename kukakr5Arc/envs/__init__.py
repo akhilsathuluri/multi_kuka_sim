@@ -1,1 +1,2 @@
 from kukakr5Arc.envs.kukakr5Arc_env import kukakr5ArcEnv
+from kukakr5Arc.envs.kukakr5Arc_env_v1 import kukakr5ArcEnv_v1

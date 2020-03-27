@@ -29,6 +29,12 @@ targetJpos = p.calculateInverseKinematics(robot, 6, reach_pos, reach_ori)
 joint_number = 6
 p.getLinkState(robot, joint_number)[:2]
 p.setJointMotorControlArray(robot, range(6), p.POSITION_CONTROL, targetPositions=targetJpos)
+
+frameSkip = 10
+timeStep = 0.002
+
+p.setPhysicsEngineParameter(fixedTimeStep=timeStep * frameSkip,         numSolverIterations=15,                                     numSubSteps=frameSkip)
+
 #Simulation
 for _ in range (50):
     p.stepSimulation()
