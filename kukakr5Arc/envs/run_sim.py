@@ -29,13 +29,14 @@ print('Loading model.....Model loaded')
 #env.render() goes before env.reset() for the render to work
 #env.render()
 
-obs = env.reset()
-while True:
-    action, _states = model.predict(obs)
-    obs, rewards, dones, info = env.step(action)
+#obs = env.reset()
+#while True:
+#    action, _states = model.predict(obs)
+#    obs, rewards, dones, info = env.step(action)
 #    env.render()
 
 while True:
+	print("running saved policy")
 	obs = env.reset()
 	for moves in range(80):
 		action, _states = model.predict(obs)
