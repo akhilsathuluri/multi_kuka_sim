@@ -38,7 +38,7 @@ class kukakr5ArcEnv_v1(gym.Env):
                action_repeat=1,
                time_step=1./240.,
                num_bullet_solver_iterations=50,
-               urdf_root="/home/nightmareforev/catkin_ws/src/kuka_experimental-indigo-devel/kuka_kr5_support/urdf"):
+               urdf_root="/home/nightmareforev/git/bullet_stuff/multi_kuka_sim/kuka_kr5_support/urdf"):
         """Initialize the gym environment.
         Args:
         urdf_root: The path to the urdf data folder.

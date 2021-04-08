@@ -16,7 +16,7 @@ import kukakr5Arc
 
 class kukakr5ArcEnv(gym.Env):
 
-	def __init__(self, urdfRootPath = "/home/nightmareforev/catkin_ws/src/kuka_experimental-indigo-devel/kuka_kr5_support/urdf", timeStep=0.01):
+	def __init__(self, urdfRootPath = "/home/nightmareforev/git/bullet_stuff/multi_kuka_sim/kuka_kr5_support/urdf", timeStep=0.01):
 		self._time_step = timeStep
 		self._num_bullet_solver_iterations = 300
 		self.urdfRootPath = urdfRootPath
