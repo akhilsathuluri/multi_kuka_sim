@@ -90,7 +90,7 @@ moveit-commander==0.9.17
 moveit-ros-planning-interface==0.9.17
 moveit-ros-visualization==0.9.17
 mpi4py==3.0.0
-numpy==1.18.0
+numpy==1.22.0
 oauthlib==3.1.0
 onboard==1.2.0
 opencv-contrib-python==4.2.0.32
