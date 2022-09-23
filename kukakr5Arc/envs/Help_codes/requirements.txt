@@ -106,7 +106,7 @@ plainbox==0.25
 pluggy==0.13.1
 pluginlib==1.11.3
 progressbar2==3.36.0
-protobuf==3.11.3
+protobuf==3.18.3
 ptyprocess==0.5
 py==1.8.1
 pyasn1==0.4.8
