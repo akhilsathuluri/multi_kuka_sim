@@ -102,7 +102,7 @@ padme==1.1.1
 pandas==0.23.1
 pathlib2==2.3.5
 pexpect==4.0.1
-Pillow==5.1.0
+Pillow==9.3.0
 plainbox==0.25
 pluggy==0.13.1
 pluginlib==1.11.3
